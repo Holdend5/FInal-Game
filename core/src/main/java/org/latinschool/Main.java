@@ -21,10 +21,16 @@ public class Main extends ApplicationAdapter {
     private List<Body> squares;
     private List<Body> frozenSquares;
     private List<Body> frozenCircles;
+    private List<Body> sSquares;
+    private List<Body> rSquares;
     private Body groundBody;
     private Body leftWallBody;
     private Body rightWallBody;
     private int toolMode = 1;
+    private boolean launchActive = false;
+    private float previousX;
+    private float previousY;
+
 
     @Override
     public void create() {
@@ -37,6 +43,8 @@ public class Main extends ApplicationAdapter {
         squares = new ArrayList<>();
         frozenSquares = new ArrayList<>();
         frozenCircles = new ArrayList<>();
+        sSquares = new ArrayList<>();
+        rSquares = new ArrayList<>();
         BodyDef groundDef = new BodyDef();
         groundDef.position.set(0, -15);
         groundBody = world.createBody(groundDef);
@@ -74,6 +82,24 @@ public class Main extends ApplicationAdapter {
                 createFrozenSquare(worldCoords.x, worldCoords.y);
             } else if (toolMode == 4) {
                 createFrozenCircle(worldCoords.x, worldCoords.y);
+            } else if (toolMode == 5) {
+                getCoords();
+            } else if (toolMode == 6) {
+                createSlipperySquare(worldCoords.x, worldCoords.y);
+            } else if (toolMode == 7) {
+                createRoughSquare(worldCoords.x, worldCoords.y);
+            } else if (toolMode == 8) {
+                if (launchActive) {
+                    float newX = worldCoords.x - previousX;
+                    float newY = worldCoords.y - previousY;
+                    Vector2 force = new Vector2((newX * -500),(newY * -500));
+                    launchableBall(worldCoords.x, worldCoords.y, force);
+                    launchActive = false;
+                } else {
+                    launchActive = true;
+                    previousX = worldCoords.x;
+                    previousY = worldCoords.y;
+                }
             }
             return true;
         }
@@ -105,10 +131,32 @@ public class Main extends ApplicationAdapter {
                 squares.clear();
                 frozenSquares.clear();
                 frozenCircles.clear();
+            } else if (keycode == com.badlogic.gdx.Input.Keys.NUM_5) {
+                toolMode = 5;
+            } else if (keycode == com.badlogic.gdx.Input.Keys.NUM_6) {
+                toolMode = 6;
+            } else if (keycode == com.badlogic.gdx.Input.Keys.NUM_7) {
+                toolMode = 7;
+            } else if (keycode == com.badlogic.gdx.Input.Keys.NUM_8) {
+                toolMode = 8;
             }
             return true;
         }
     }
+
+    private void getCoords() {
+        int screenX = Gdx.input.getX();
+        int screenY = Gdx.input.getY();
+
+        Vector3 screenCoords = new Vector3(screenX, screenY, 0);
+        Vector3 worldCoords = camera.unproject(screenCoords);
+        System.out.println("Mouse Coordinates in World: (" + worldCoords.x + ", " + worldCoords.y + ")");
+    }
+
+    private void stationaryCircle(float x, float y) {
+
+    }
+
 
     private void createCircle(float x, float y) {
         BodyDef circleDef = new BodyDef();
@@ -186,6 +234,68 @@ public class Main extends ApplicationAdapter {
 
         frozenCircles.add(frozenBody);
     }
+    private void createSlipperySquare(float x, float y) {
+        BodyDef SboxDef = new BodyDef();
+        SboxDef.type = BodyDef.BodyType.DynamicBody;
+        SboxDef.position.set(x, y);
+        SboxDef.allowSleep = true;
+        SboxDef.fixedRotation = false;
+        Body SboxBody = world.createBody(SboxDef);
+        PolygonShape boxShape = new PolygonShape();
+        boxShape.setAsBox(1, 1);
+        FixtureDef fixtureDef = new FixtureDef();
+        fixtureDef.shape = boxShape;
+        fixtureDef.density = 1.0f;
+        fixtureDef.friction = 0.0001f;
+        fixtureDef.restitution = 0.2f;
+        SboxBody.createFixture(fixtureDef);
+        boxShape.dispose();
+        sSquares.add(SboxBody);
+    }
+    private void createRoughSquare(float x, float y) {
+        BodyDef RboxDef = new BodyDef();
+        RboxDef.type = BodyDef.BodyType.DynamicBody;
+        RboxDef.position.set(x, y);
+        RboxDef.allowSleep = true;
+        RboxDef.fixedRotation = false;
+        Body RboxBody = world.createBody(RboxDef);
+        PolygonShape boxShape = new PolygonShape();
+        boxShape.setAsBox(1, 1);
+        FixtureDef fixtureDef = new FixtureDef();
+        fixtureDef.shape = boxShape;
+        fixtureDef.density = 1.0f;
+        fixtureDef.friction = 1000.0f;
+        fixtureDef.restitution = 0.2f;
+        RboxBody.createFixture(fixtureDef);
+        boxShape.dispose();
+        rSquares.add(RboxBody);
+    }
+
+    private void launchableBall(float x, float y, Vector2 force) {
+        // Create the ball
+        BodyDef ballDef = new BodyDef();
+        ballDef.type = BodyDef.BodyType.DynamicBody;
+        ballDef.position.set(x, y);
+        Body ballBody = world.createBody(ballDef);
+
+        CircleShape circleShape = new CircleShape();
+        circleShape.setRadius(1);
+
+        FixtureDef fixtureDef = new FixtureDef();
+        fixtureDef.shape = circleShape;
+        fixtureDef.density = 1.0f;
+        fixtureDef.friction = 0.3f;
+        fixtureDef.restitution = 0.2f;
+
+        ballBody.createFixture(fixtureDef);
+        circleShape.dispose();
+        circles.add(ballBody);
+        ballBody.applyForceToCenter(force, true);
+    }
+    public void drawAimLine(float x, float y, float x2, float y2) {
+        shapeRenderer.setColor(1, 1, 0, 1);
+        shapeRenderer.line(x, y, x2, y2);
+    }
 
 
     @Override
@@ -219,6 +329,26 @@ public class Main extends ApplicationAdapter {
         }
         for (Body circle : frozenCircles) {
             shapeRenderer.circle(circle.getPosition().x, circle.getPosition().y, 1, 20);
+        }
+        shapeRenderer.setColor(new Color(0.6f, 1f, 0.6f, 1f));
+        for (Body sSquare : sSquares) {
+            float x = sSquare.getPosition().x;
+            float y = sSquare.getPosition().y;
+            float angle = sSquare.getAngle();
+            shapeRenderer.rect(x - 1, y - 1, 1, 1, 2, 2, 1, 1, (float) Math.toDegrees(angle));
+        }
+        for (Body rSquare : rSquares) {
+            float x = rSquare.getPosition().x;
+            float y = rSquare.getPosition().y;
+            float angle = rSquare.getAngle();
+            shapeRenderer.rect(x - 1, y - 1, 1, 1, 2, 2, 1, 1, (float) Math.toDegrees(angle));
+        }
+        if (launchActive) {
+            int screenX = Gdx.input.getX();
+            int screenY = Gdx.input.getY();
+            Vector3 screenCoords = new Vector3(screenX, screenY, 0);
+            Vector3 worldCoords = camera.unproject(screenCoords);
+            drawAimLine(previousX, previousY, worldCoords.x, worldCoords.y);
         }
         shapeRenderer.end();
     }
