@@ -9,6 +9,8 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.physics.box2d.*;
+import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.badlogic.gdx.utils.viewport.Viewport;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,6 +18,7 @@ import java.util.List;
 public class Main extends ApplicationAdapter {
     private World world;
     private OrthographicCamera camera;
+    private Viewport viewport;
     private ShapeRenderer shapeRenderer;
     private List<Body> circles;
     private List<Body> squares;
@@ -23,6 +26,7 @@ public class Main extends ApplicationAdapter {
     private List<Body> frozenCircles;
     private List<Body> sSquares;
     private List<Body> rSquares;
+    private List<Body> lCircles;
     private Body groundBody;
     private Body leftWallBody;
     private Body rightWallBody;
@@ -37,6 +41,10 @@ public class Main extends ApplicationAdapter {
         camera = new OrthographicCamera(50, 50 * (Gdx.graphics.getHeight() / (float) Gdx.graphics.getWidth()));
         camera.position.set(0, 0, 0);
         camera.update();
+
+        viewport = new FitViewport(50, 50 * (Gdx.graphics.getHeight() / (float) Gdx.graphics.getWidth()), camera);
+        viewport.apply();
+
         world = new World(new Vector2(0, -9.8f), true);
         shapeRenderer = new ShapeRenderer();
         circles = new ArrayList<>();
@@ -45,6 +53,7 @@ public class Main extends ApplicationAdapter {
         frozenCircles = new ArrayList<>();
         sSquares = new ArrayList<>();
         rSquares = new ArrayList<>();
+        lCircles = new ArrayList<>();
         BodyDef groundDef = new BodyDef();
         groundDef.position.set(0, -15);
         groundBody = world.createBody(groundDef);
@@ -73,22 +82,20 @@ public class Main extends ApplicationAdapter {
         @Override
         public boolean touchDown(int screenX, int screenY, int pointer, int button) {
             Vector3 screenCoords = new Vector3(screenX, screenY, 0);
-            Vector3 worldCoords = camera.unproject(screenCoords);
+            Vector3 worldCoords = viewport.unproject(screenCoords);
             if (toolMode == 1) {
                 createCircle(worldCoords.x, worldCoords.y);
             } else if (toolMode == 2) {
                 createSquare(worldCoords.x, worldCoords.y);
             } else if (toolMode == 3) {
-                createFrozenSquare(worldCoords.x, worldCoords.y);
-            } else if (toolMode == 4) {
                 createFrozenCircle(worldCoords.x, worldCoords.y);
+            } else if (toolMode == 4) {
+                createFrozenSquare(worldCoords.x, worldCoords.y);
             } else if (toolMode == 5) {
-                getCoords();
-            } else if (toolMode == 6) {
                 createSlipperySquare(worldCoords.x, worldCoords.y);
-            } else if (toolMode == 7) {
+            } else if (toolMode == 6) {
                 createRoughSquare(worldCoords.x, worldCoords.y);
-            } else if (toolMode == 8) {
+            } else if (toolMode == 7) {
                 if (launchActive) {
                     float newX = worldCoords.x - previousX;
                     float newY = worldCoords.y - previousY;
@@ -100,6 +107,8 @@ public class Main extends ApplicationAdapter {
                     previousX = worldCoords.x;
                     previousY = worldCoords.y;
                 }
+            } else if (toolMode == 8) {
+                getCoords();
             }
             return true;
         }
@@ -245,7 +254,7 @@ public class Main extends ApplicationAdapter {
         boxShape.setAsBox(1, 1);
         FixtureDef fixtureDef = new FixtureDef();
         fixtureDef.shape = boxShape;
-        fixtureDef.density = 1.0f;
+        fixtureDef.density = 0.5f;
         fixtureDef.friction = 0.0001f;
         fixtureDef.restitution = 0.2f;
         SboxBody.createFixture(fixtureDef);
@@ -263,7 +272,7 @@ public class Main extends ApplicationAdapter {
         boxShape.setAsBox(1, 1);
         FixtureDef fixtureDef = new FixtureDef();
         fixtureDef.shape = boxShape;
-        fixtureDef.density = 1.0f;
+        fixtureDef.density = 3.0f;
         fixtureDef.friction = 1000.0f;
         fixtureDef.restitution = 0.2f;
         RboxBody.createFixture(fixtureDef);
@@ -272,7 +281,7 @@ public class Main extends ApplicationAdapter {
     }
 
     private void launchableBall(float x, float y, Vector2 force) {
-        // Create the ball
+        shapeRenderer.setColor(new Color(0.1f, 1f, 0.9f, 0.7f));
         BodyDef ballDef = new BodyDef();
         ballDef.type = BodyDef.BodyType.DynamicBody;
         ballDef.position.set(x, y);
@@ -289,11 +298,11 @@ public class Main extends ApplicationAdapter {
 
         ballBody.createFixture(fixtureDef);
         circleShape.dispose();
-        circles.add(ballBody);
+        lCircles.add(ballBody);
         ballBody.applyForceToCenter(force, true);
     }
     public void drawAimLine(float x, float y, float x2, float y2) {
-        shapeRenderer.setColor(1, 1, 0, 1);
+        shapeRenderer.setColor(255, 255, 255, 0.17f);
         shapeRenderer.line(x, y, x2, y2);
     }
 
@@ -303,6 +312,7 @@ public class Main extends ApplicationAdapter {
         Gdx.gl.glClearColor(0.15f, 0.15f, 0.2f, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
         world.step(1 / 60f, 6, 2);
+        viewport.apply();
         camera.update();
         shapeRenderer.setProjectionMatrix(camera.combined);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
@@ -330,18 +340,23 @@ public class Main extends ApplicationAdapter {
         for (Body circle : frozenCircles) {
             shapeRenderer.circle(circle.getPosition().x, circle.getPosition().y, 1, 20);
         }
-        shapeRenderer.setColor(new Color(0.6f, 1f, 0.6f, 1f));
+        shapeRenderer.setColor(new Color(0.47f, 0.58f, 0.94f, 0.3f));
         for (Body sSquare : sSquares) {
             float x = sSquare.getPosition().x;
             float y = sSquare.getPosition().y;
             float angle = sSquare.getAngle();
             shapeRenderer.rect(x - 1, y - 1, 1, 1, 2, 2, 1, 1, (float) Math.toDegrees(angle));
         }
+        shapeRenderer.setColor(new Color(0.49f, 0f, 0.54f, 0.85f));
         for (Body rSquare : rSquares) {
             float x = rSquare.getPosition().x;
             float y = rSquare.getPosition().y;
             float angle = rSquare.getAngle();
             shapeRenderer.rect(x - 1, y - 1, 1, 1, 2, 2, 1, 1, (float) Math.toDegrees(angle));
+        }
+        shapeRenderer.setColor(new Color(0.6f, 0.15f, 0.1f, 1.0f));
+        for (Body circle : lCircles) {
+            shapeRenderer.circle(circle.getPosition().x, circle.getPosition().y, 1, 20);
         }
         if (launchActive) {
             int screenX = Gdx.input.getX();
@@ -350,7 +365,33 @@ public class Main extends ApplicationAdapter {
             Vector3 worldCoords = camera.unproject(screenCoords);
             drawAimLine(previousX, previousY, worldCoords.x, worldCoords.y);
         }
+        if (toolMode == 1) {
+            shapeRenderer.setColor(new Color(0.6f, 1f, 0.6f, 1f));
+            shapeRenderer.circle(21.0f, 16.0f, 1, 20);
+        } else if (toolMode == 2) {
+            shapeRenderer.setColor(new Color(0.6f, 1f, 0.6f, 1f));
+            shapeRenderer.rect(20.0f, 15.0f, 2, 2);
+        } else if (toolMode == 3) {
+            shapeRenderer.setColor(new Color(0.4f, 0.8f, 1f, 1f));
+            shapeRenderer.circle(21.0f, 16.0f, 1, 20);
+        } else if (toolMode == 4) {
+            shapeRenderer.setColor(new Color(0.4f, 0.8f, 1f, 1f));
+            shapeRenderer.rect(20.0f, 15.0f, 2, 2);
+        } else if (toolMode == 5) {
+
+        } else if (toolMode == 6) {
+
+        } else if (toolMode == 7) {
+
+        } else if (toolMode == 8) {
+
+        }
         shapeRenderer.end();
+    }
+
+    @Override
+    public void resize(int width, int height) {
+        viewport.update(width, height);
     }
 
     @Override
