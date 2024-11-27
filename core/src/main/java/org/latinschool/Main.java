@@ -158,12 +158,8 @@ public class Main extends ApplicationAdapter {
         int screenY = Gdx.input.getY();
 
         Vector3 screenCoords = new Vector3(screenX, screenY, 0);
-        Vector3 worldCoords = camera.unproject(screenCoords);
+        Vector3 worldCoords = viewport.unproject(screenCoords);
         System.out.println("Mouse Coordinates in World: (" + worldCoords.x + ", " + worldCoords.y + ")");
-    }
-
-    private void stationaryCircle(float x, float y) {
-
     }
 
 
@@ -362,7 +358,7 @@ public class Main extends ApplicationAdapter {
             int screenX = Gdx.input.getX();
             int screenY = Gdx.input.getY();
             Vector3 screenCoords = new Vector3(screenX, screenY, 0);
-            Vector3 worldCoords = camera.unproject(screenCoords);
+            Vector3 worldCoords = viewport.unproject(screenCoords);
             drawAimLine(previousX, previousY, worldCoords.x, worldCoords.y);
         }
         if (toolMode == 1) {
@@ -378,11 +374,14 @@ public class Main extends ApplicationAdapter {
             shapeRenderer.setColor(new Color(0.4f, 0.8f, 1f, 1f));
             shapeRenderer.rect(20.0f, 15.0f, 2, 2);
         } else if (toolMode == 5) {
-
+            shapeRenderer.setColor(new Color(0.47f, 0.58f, 0.94f, 0.3f));
+            shapeRenderer.rect(20.0f, 15.0f, 2, 2);
         } else if (toolMode == 6) {
-
+            shapeRenderer.setColor(new Color(0.49f, 0f, 0.54f, 0.85f));
+            shapeRenderer.rect(20.0f, 15.0f, 2, 2);
         } else if (toolMode == 7) {
-
+            shapeRenderer.setColor(new Color(0.6f, 0.15f, 0.1f, 1.0f));
+            shapeRenderer.circle(21.0f, 16.0f, 1, 20);
         } else if (toolMode == 8) {
 
         }
