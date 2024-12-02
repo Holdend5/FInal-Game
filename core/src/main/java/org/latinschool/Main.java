@@ -140,6 +140,9 @@ public class Main extends ApplicationAdapter {
                 squares.clear();
                 frozenSquares.clear();
                 frozenCircles.clear();
+                rSquares.clear();
+                sSquares.clear();
+                lCircles.clear();
             } else if (keycode == com.badlogic.gdx.Input.Keys.NUM_5) {
                 toolMode = 5;
             } else if (keycode == com.badlogic.gdx.Input.Keys.NUM_6) {
